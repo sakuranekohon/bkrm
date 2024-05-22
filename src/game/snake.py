@@ -117,6 +117,11 @@ def styles():
                     background="#FFFFFF",
                     font=("Comic Sans MS", 20, "bold"))
     
+    style.configure("homeLabel.TLabel",
+                    foreground="#FFFFFF",
+                    background="#282626",
+                    font=("Comic Sans MS", 12))
+    
     style.configure("gameLabel.TLabel",
                     foreground="#FFFFFF",
                     background="#282626",
@@ -167,8 +172,12 @@ def homePage():
     playBTN = ttk.Button(leftFrame, text="Play", style="homeBTN.TButton", command=play)
     exitBTN = ttk.Button(leftFrame, text="Exit", style="homeBTN.TButton", command=exit)
     padxV, padyV = 20, 20
+    versionLabel = ttk.Label(leftFrame,text="version:v1.0",style="homeLabel.TLabel")
+    versionLabel.pack(side="bottom",anchor="sw")
     playBTN.pack(side="top", padx=padxV, pady=padyV)
     exitBTN.pack(side="bottom", padx=padxV, pady=padyV)
+
+    
     
     img = Image.open("./images/snake.png")
     img = img.resize((rightFrame.winfo_width(), rightFrame.winfo_height()))
@@ -187,7 +196,7 @@ def gamePage():
 
     snake_game = SnakeGame(gameCanvas, scoreLabel)
     root.bind("<KeyPress>", snake_game.change_direction)
-    root.bind("<Escape>", snake_game.toggle_pause)  # 綁定 'Esc' 鍵以切換暫停狀態
+    root.bind("<Escape>", snake_game.toggle_pause)
 
 def run():
     print("Game start")
