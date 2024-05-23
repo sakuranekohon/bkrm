@@ -16,6 +16,11 @@ def styles():
                     foreground="#FFFFFF",
                     background="#910000",
                     font=("Comic Sans MS", 20))
+    
+    style.configure("RIT.TLabel",
+                    foreground="#000000",
+                    background="#FFFFFF"
+                    font=("Comic Sans MS", 20))
 
 def windowInit():
     global root
@@ -81,8 +86,10 @@ def homePage():
         bitcoinAddr.config(state="readonly")
 
     def ransomInstructions():
-
-
+        RIFrame = tk.Frame(root,width=825,height=400,background="#FFFFFF",bd=2)
+        RIFrame.place(x=30,y=180)
+        RIFrame.pack_propagate(False)
+        ttk.Label(RIFrame,text="勒索說明",style="RIT.TLabel").pack(side="top")
     lockImage()
     timeLeftAndBTCAddr()
     ransomInstructions()
