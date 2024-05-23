@@ -80,8 +80,12 @@ def homePage():
         bitcoinAddr.place(x=150,y=90)
         bitcoinAddr.config(state="readonly")
 
+    def ransomInstructions():
+
+
     lockImage()
     timeLeftAndBTCAddr()
+    ransomInstructions()
 
 def run():
     print("victim window")
