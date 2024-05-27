@@ -19,7 +19,12 @@ def styles():
     
     style.configure("RIT.TLabel",
                     foreground="#000000",
-                    background="#FFFFFF"
+                    background="#FFFFFF",
+                    font=("Comic Sans MS", 20))
+    
+    style.configure("btn.TButton",
+                    foreground="#000000",
+                    background="#FFFFFF",
                     font=("Comic Sans MS", 20))
 
 def windowInit():
@@ -90,9 +95,20 @@ def homePage():
         RIFrame.place(x=30,y=180)
         RIFrame.pack_propagate(False)
         ttk.Label(RIFrame,text="勒索說明",style="RIT.TLabel").pack(side="top")
+
+    def btn():
+        btnFrame = tk.Frame(root,width=825,height=100,background="#910000")
+        btnFrame.place(x = 30,y = 550)
+        btnFrame.pack_propagate(False)
+        payBTN = ttk.Button(btnFrame,text="Pay",style="btn.TButton")
+        decryptionBTN = ttk.Button(btnFrame,text="Decrypto",style="btn.TButton")
+        payBTN.pack(side='left',padx=100)
+        decryptionBTN.pack(side='right',padx=100)
+
     lockImage()
     timeLeftAndBTCAddr()
     ransomInstructions()
+    btn()
 
 def run():
     print("victim window")
@@ -100,5 +116,5 @@ def run():
     styles()
     root.mainloop()
 
-if __name__ == "__main__":
-    run()
+# if __name__ == "__main__":
+#     run()

