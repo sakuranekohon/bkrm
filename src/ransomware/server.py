@@ -3,6 +3,9 @@ from tkinter import ttk
 import pyautogui
 import os
 import json
+import datetime
+
+logger = []
 
 def styles():
     style = ttk.Style()
@@ -29,7 +32,7 @@ def styles():
                     width=800)
 
 def windowInit():
-    global root,log
+    global root
     root = tk.Tk()
     root.title("Server")
     root.iconbitmap("./images/lock.ico")
@@ -38,13 +41,6 @@ def windowInit():
     root.geometry(f"{width}x{height}+{x-width//2}+{y-height//2}")
     root.resizable(False, False)
 
-    log = tk.Tk()
-    log.title("Log")
-    log.configure(bg="#282626")
-    width, height, x, y = 300, 700, pyautogui.size().width // 1.2, pyautogui.size().height // 2
-    log.geometry(f"{width}x{height}+{int(x)-width//2}+{y-height//2}")
-    log.resizable(False, False)
-
     menuBar()
     victimListPage()
 
@@ -52,6 +48,7 @@ def menuBar():
     menu = tk.Menu(root)
     menu.add_cascade(label="VictimList",command=victimListPage)
     menu.add_cascade(label="Connect",command=connectPage)
+    #menu.add_cascade(label="logging",command=logf)
     root.config(menu=menu)
 
 def clearWindow():
@@ -70,6 +67,7 @@ def victimListPage():
                 data = json.load(file)
             for item in data:
                 print(item)
+                writeLog(item)
                 if(item["paid"] == True):
                     tree.insert("", tk.END, values=(item["UID"], item["fileNumber"], item["privateKey"], item["date"],item["paid"]),tags=("paid_true"))
                 else:
@@ -125,11 +123,47 @@ def connectPage():
     clearWindow()
     online()
 
+def logf():
+    def clear():
+        logger.clear()
+        log_text_var.set("")
+    
+    def update():
+        log_text_var.set("\n".join(logger))
+        listbox.see(tk.END)
+        listbox.after(500, update)
+    
+    clearWindow()
+
+    l = tk.Frame(root, width=850, height=300, bg="white")
+    l.pack(pady=10)
+    l.pack_propagate(False)
+
+    ysb = tk.Scrollbar(l)
+    ysb.pack(side="right",fill="y")
+    xsb = tk.Scrollbar(l,orient="horizontal")
+    xsb.pack(side="bottom",fill="x")
+
+    log_text_var = tk.StringVar()
+    listbox = tk.Listbox(l,xscrollcommand=xsb.set, yscrollcommand=ysb.set, listvariable=log_text_var)
+    listbox.pack(side="left",fill="both",expand=True)
+
+    ysb.config(command=listbox.yview)
+    xsb.config(command=listbox.xview)
+    update()
+
+    ttk.Button(root,text="Clear",command=clear).pack(pady=10)
+
+def writeLog(message):
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    message = str(message).replace('\n', ' ')
+    log_message = f"《{timestamp}》 {message}"
+    logger.append(log_message)
+
 def run():
     windowInit()
     styles()
     root.mainloop()
-    log.mainloop()
 
 if __name__ == "__main__":
     run()
