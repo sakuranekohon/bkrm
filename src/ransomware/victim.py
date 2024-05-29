@@ -5,6 +5,7 @@ from PIL import Image, ImageTk
 import json
 import os
 import datetime
+#from mysocket import MySocket
 
 def styles():
     style = ttk.Style()
