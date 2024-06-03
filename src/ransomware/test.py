@@ -1,58 +1,111 @@
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import padding
-import os
+import heapq
+from collections import Counter
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
+from Crypto.Random import get_random_bytes
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
 
-def generate_aes_key(length=32):
-    """生成AES密钥"""
-    return os.urandom(length)
+# 霍夫曼編碼和解碼
+class HuffmanNode:
+    def __init__(self, freq, symbol=None, left=None, right=None):
+        self.freq = freq
+        self.symbol = symbol
+        self.left = left
+        self.right = right
 
+    def __lt__(self, other):
+        return self.freq < other.freq
+
+def build_huffman_tree(text):
+    frequency = Counter(text)
+    heap = [HuffmanNode(freq, symbol) for symbol, freq in frequency.items()]
+    heapq.heapify(heap)
+    
+    while len(heap) > 1:
+        left = heapq.heappop(heap)
+        right = heapq.heappop(heap)
+        merged = HuffmanNode(left.freq + right.freq, left=left, right=right)
+        heapq.heappush(heap, merged)
+    
+    return heap[0]
+
+def build_codes(node, prefix="", codebook={}):
+    if node.symbol is not None:
+        codebook[node.symbol] = prefix
+    else:
+        build_codes(node.left, prefix + "0", codebook)
+        build_codes(node.right, prefix + "1", codebook)
+    return codebook
+
+def huffman_encode(text):
+    tree = build_huffman_tree(text)
+    codebook = build_codes(tree)
+    encoded_text = ''.join(codebook[symbol] for symbol in text)
+    return encoded_text, tree
+
+def huffman_decode(encoded_text, tree):
+    decoded_text = []
+    node = tree
+    for bit in encoded_text:
+        node = node.left if bit == '0' else node.right
+        if node.symbol is not None:
+            decoded_text.append(node.symbol)
+            node = tree
+    return ''.join(decoded_text)
+
+# AES加密和解密
 def aes_encrypt(data, key):
-    """使用AES加密"""
-    # 生成一个随机的初始向量
-    iv = os.urandom(16)
-    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
-    encryptor = cipher.encryptor()
+    cipher = AES.new(key, AES.MODE_CBC)
+    ct_bytes = cipher.encrypt(pad(data.encode(), AES.block_size))
+    iv = cipher.iv
+    return iv + ct_bytes
 
-    # 使用PKCS7填充
-    padder = padding.PKCS7(128).padder()
-    padded_data = padder.update(data) + padder.finalize()
+def aes_decrypt(ciphertext, key):
+    iv = ciphertext[:16]
+    ct = ciphertext[16:]
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    pt = unpad(cipher.decrypt(ct), AES.block_size)
+    return pt.decode()
 
-    # 加密数据
-    encrypted_data = encryptor.update(padded_data) + encryptor.finalize()
-    return iv + encrypted_data
+# RSA加密和解密
+def rsa_encrypt(data, public_key):
+    cipher = PKCS1_OAEP.new(public_key)
+    return cipher.encrypt(data)
 
-def aes_decrypt(encrypted_data, key):
-    """使用AES解密"""
-    # 分离初始向量和加密数据
-    iv = encrypted_data[:16]
-    encrypted_data = encrypted_data[16:]
-    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
-    decryptor = cipher.decryptor()
+def rsa_decrypt(ciphertext, private_key):
+    cipher = PKCS1_OAEP.new(private_key)
+    return cipher.decrypt(ciphertext)
 
-    # 解密数据
-    padded_data = decryptor.update(encrypted_data) + decryptor.finalize()
+# 示例使用
+text = "this is an example for huffman encoding and AES encryption"
+key = get_random_bytes(16)  # AES-128
 
-    # 去除填充
-    unpadder = padding.PKCS7(128).unpadder()
-    data = unpadder.update(padded_data) + unpadder.finalize()
-    return data
+# 生成RSA密鑰對
+rsa_key = RSA.generate(2048)
+private_key = rsa_key
+public_key = rsa_key.publickey()
 
-def main():
-    # 原始消息
-    message = "AA"
-    message_bytes = message.encode('utf-8')
+# 霍夫曼編碼
+encoded_text, tree = huffman_encode(text)
 
-    # 生成密钥
-    key = generate_aes_key()
+# AES加密
+encrypted_text = aes_encrypt(encoded_text, key)
 
-    # 加密消息
-    encrypted_message = aes_encrypt(message_bytes, key)
-    print("Encrypted message:", encrypted_message)
+# RSA加密AES密鑰
+encrypted_key = rsa_encrypt(key, public_key)
 
-    # 解密消息
-    decrypted_message = aes_decrypt(encrypted_message, key)
-    print("Decrypted message:", decrypted_message.decode('utf-8'))
+# RSA解密AES密鑰
+decrypted_key = rsa_decrypt(encrypted_key, private_key)
 
-if __name__ == "__main__":
-    main()
+# AES解密
+decrypted_encoded_text = aes_decrypt(encrypted_text, decrypted_key)
+
+# 霍夫曼解碼
+decoded_text = huffman_decode(decrypted_encoded_text, tree)
+
+assert text == decoded_text
+print("原文: ", text)
+print("加密後: ", encrypted_text)
+print("RSA加密的AES密鑰: ", encrypted_key)
+print("解密後: ", decoded_text)

