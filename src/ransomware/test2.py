@@ -4,11 +4,12 @@ import json
 client = MySocket.Client()
 
 data = {
-    "UID":"sadn kljpojxcv",
+    "getPrivate":False,
+    "UID":"A123456",
     "fileNumber":99999999,
     "privateKey":"sdasaposdsa13245sad",
     "lockTime":"2024-05-30",
-    "padding":True
+    "padd":False
 }
 
 client.sendTCPMeg(data,8080)

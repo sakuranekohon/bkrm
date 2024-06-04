@@ -70,7 +70,7 @@ def victimListPage():
             with open(testPath) as file:
                 data = json.load(file)
             for item in data:
-                print(item)
+                #print(item)
                 writeLog(item)
                 if(item["paid"] == True):
                     tree.insert("", tk.END, values=(item["UID"], item["fileNumber"], item["privateKey"], item["date"],item["paid"]),tags=("paid_true"))
