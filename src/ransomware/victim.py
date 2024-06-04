@@ -99,6 +99,7 @@ def homePage():
         RIFrame.place(x=30,y=180)
         RIFrame.pack_propagate(False)
         ttk.Label(RIFrame,text="勒索說明",style="RIT.TLabel").pack(side="top")
+        ttk.Label(RIFrame,text="我不想寫他了",style="RIT.TLabel").pack()
 
     def btn():
         def __pay():
