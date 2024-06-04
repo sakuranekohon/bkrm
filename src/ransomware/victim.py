@@ -136,7 +136,7 @@ def homePage():
         btnFrame.place(x = 30,y = 550)
         btnFrame.pack_propagate(False)
         payBTN = ttk.Button(btnFrame,text="Pay",style="btn.TButton",command=__pay)
-        decryptionBTN = ttk.Button(btnFrame,text="Decrypto",style="btn.TButton",command=__decrypt)
+        decryptionBTN = ttk.Button(btnFrame,text="Decrypt",style="btn.TButton",command=__decrypt)
         payBTN.pack(side='left',padx=100)
         decryptionBTN.pack(side='right',padx=100)
 
